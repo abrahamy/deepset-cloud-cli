@@ -1,0 +1,11 @@
+[package]
+name = "deepset-cloud-cli"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = ["deepset-cloud-api"]
+
+[dependencies]
+deepset-cloud-api = { path = "deepset-cloud-api" }
+tokio = { version = "1.40.0", features = ["full"] }

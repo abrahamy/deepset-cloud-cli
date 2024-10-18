@@ -1,0 +1,15 @@
+[package]
+name = "deepset-cloud-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+apisdk = "0.0.15"
+chrono = { version = "0.4.38", features = ["serde"] }
+serde = "1.0.210"
+uuid = { version = "1.11.0", features = [
+    "v4",
+    "fast-rng",
+    "macro-diagnostics",
+    "serde",
+] }
