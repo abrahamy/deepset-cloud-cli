@@ -1,2 +1,2 @@
-pub mod pipeline;
-pub mod workspace;
+mod pipeline;
+mod workspace;

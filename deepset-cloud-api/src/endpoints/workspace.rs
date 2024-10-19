@@ -1,16 +1,8 @@
 use apisdk::{send, ApiResult};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
+use crate::types::Workspace;
 use crate::DeepsetCloudApi;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Workspace {
-    name: String,
-    workspace_id: Uuid,
-    languages: Vec<String>,
-    default_idle_timeout_in_seconds: u64,
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 struct WorkspaceList {
