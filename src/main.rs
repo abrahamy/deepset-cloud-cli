@@ -1,8 +1,22 @@
+use tracing::{error, Level};
+use tracing_subscriber::FmtSubscriber;
+
 use deepset_cloud_api::types::sdk::AccessTokenAuth;
 use deepset_cloud_api::{DeepsetCloudApi, DeepsetCloudSettings};
 
+fn configure_logging() {
+    tracing::subscriber::set_global_default(
+        FmtSubscriber::builder()
+            .with_max_level(Level::INFO)
+            .json()
+            .finish(),
+    )
+    .expect("Setting default subscriber failed");
+}
+
 #[tokio::main]
 async fn main() {
+    configure_logging();
     let settings = DeepsetCloudSettings::init()
         .expect("Could not determine settings from environment variables!");
 
@@ -17,7 +31,7 @@ async fn main() {
             dbg!(workspace);
         }
         Err(api_error) => {
-            dbg!(api_error);
+            error!("Failed to retrieve workspace, reason {}", api_error);
         }
     };
 }

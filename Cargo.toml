@@ -9,3 +9,5 @@ members = ["deepset-cloud-api"]
 [dependencies]
 deepset-cloud-api = { path = "deepset-cloud-api" }
 tokio = { version = "1.40.0", features = ["full"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["json"] }
