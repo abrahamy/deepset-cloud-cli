@@ -1,5 +1,6 @@
 use config::{Config, ConfigError, Environment};
 use serde::Deserialize;
+use tracing::instrument;
 
 #[derive(Debug, Deserialize)]
 pub struct DeepsetCloudSettings {
@@ -8,6 +9,7 @@ pub struct DeepsetCloudSettings {
 }
 
 impl DeepsetCloudSettings {
+    #[instrument]
     pub fn init() -> Result<Self, ConfigError> {
         Config::builder()
             .set_default("workspace_name", "default")?
