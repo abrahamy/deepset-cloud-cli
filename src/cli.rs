@@ -27,14 +27,20 @@ pub enum Commands {
 
 #[derive(Subcommand)]
 pub enum PipelineCommands {
+    /// Create new pipelines from the artifacts stored in `pipeline_dir`
     Create {
         /// When set to `true` will update the pipeline if it already exist
         #[arg[short, long]]
         update: bool,
     },
 
+    /// Update existing pipelines with the artifacts stored in `pipeline_dir`
     Update,
+
+    /// Validate all pipelines whose artifacts are in the `pipeline_dir`
     Validate,
+
+    /// Deploy all the pipelines in the `pipeline_dir`
     Deploy,
 }
 
