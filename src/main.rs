@@ -1,10 +1,10 @@
 use clap::Parser;
-use tracing::{info, warn, Level};
+use tracing::{warn, Level};
 use tracing_subscriber::FmtSubscriber;
 
 mod cli;
 
-use cli::{Cli, Commands};
+use cli::{Cli, Commands, PipelineCommands};
 
 fn configure_logging() {
     tracing::subscriber::set_global_default(
@@ -22,17 +22,31 @@ async fn main() {
 
     let cli = Cli::parse();
 
-    match &cli.command {
-        Some(Commands::CheckIfWorkspaceExists) => {
-            info!("Checking if workspace exists...")
+    let pipeline_commands = match &cli.command {
+        Some(Commands::Pipelines { command }) => Some(command),
+        _ => {
+            warn!("Please specify a subcommand to call!");
+            None
         }
-        Some(Commands::CreateOrUpdatePipelines { pipeline_dir: _ }) => {
-            info!("Creating or updating pipelines...");
+    };
+
+    match pipeline_commands {
+        Some(&PipelineCommands::Create { update }) => {
+            cli.create_pipelines(update);
         }
-        Some(Commands::ValidatePipelines { pipeline_dir: _ }) => {
-            info!("Validating pipelines...");
+
+        Some(&PipelineCommands::Update) => {
+            cli.update_pipelines();
         }
-        Some(Commands::DeployPipelines { pipeline_dir: _ }) => {}
+
+        Some(&PipelineCommands::Validate) => {
+            cli.validate_pipelines();
+        }
+
+        Some(&PipelineCommands::Deploy) => {
+            cli.deploy_pipelines();
+        }
+
         None => {
             warn!("Please specify a subcommand to call!")
         }

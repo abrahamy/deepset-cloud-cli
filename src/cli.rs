@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use tracing::info;
 
 use deepset_cloud_api::types::sdk::AccessTokenAuth;
 use deepset_cloud_api::{DeepsetCloudApi, DeepsetCloudSettings};
@@ -7,35 +8,34 @@ use deepset_cloud_api::{DeepsetCloudApi, DeepsetCloudSettings};
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 pub struct Cli {
+    /// Sets the directory where the pipeline artifacts are stored. Defaults to `./pipelines`.
+    #[arg(short, long, value_name = "DIR")]
+    pub pipeline_dir: Option<PathBuf>,
+
     #[command(subcommand)]
     pub command: Option<Commands>,
 }
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Checks if the a workspace with the configured workspace name exists or not
-    CheckIfWorkspaceExists,
+    /// Pipeline related subcommands
+    Pipelines {
+        #[command(subcommand)]
+        command: PipelineCommands,
+    },
+}
 
-    /// Create or update pipelines
-    CreateOrUpdatePipelines {
-        /// Sets the directory where the pipeline artifacts are stored. Defaults to `./pipelines`.
-        #[arg(short, long, value_name = "DIR")]
-        pipeline_dir: Option<PathBuf>,
+#[derive(Subcommand)]
+pub enum PipelineCommands {
+    Create {
+        /// When set to `true` will update the pipeline if it already exist
+        #[arg[short, long]]
+        update: bool,
     },
 
-    /// Validate pipelines
-    ValidatePipelines {
-        /// Sets the directory where the pipeline artifacts are stored. Defaults to `./pipelines`.
-        #[arg(short, long, value_name = "DIR")]
-        pipeline_dir: Option<PathBuf>,
-    },
-
-    /// Deploy pipelines to production workspace
-    DeployPipelines {
-        /// Sets the directory where the pipeline artifacts are stored. Defaults to `./pipelines`.
-        #[arg(short, long, value_name = "DIR")]
-        pipeline_dir: Option<PathBuf>,
-    },
+    Update,
+    Validate,
+    Deploy,
 }
 
 impl Cli {
@@ -51,5 +51,28 @@ impl Cli {
         DeepsetCloudApi::builder()
             .with_authenticator(AccessTokenAuth::new(settings.api_key))
             .build()
+    }
+
+    #[allow(dead_code)]
+    fn path(&self) -> PathBuf {
+        self.pipeline_dir
+            .clone()
+            .unwrap_or(PathBuf::from("./pipelines"))
+    }
+
+    pub fn create_pipelines(&self, _update: bool) {
+        info!("Creating pipelines with...");
+    }
+
+    pub fn update_pipelines(&self) {
+        info!("Updating pipelines...");
+    }
+
+    pub fn validate_pipelines(&self) {
+        info!("Validating pipelines...");
+    }
+
+    pub fn deploy_pipelines(&self) {
+        info!("Deploying pipelines...");
     }
 }
