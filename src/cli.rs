@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::process;
 use tracing::{error, info, warn};
 
-use deepset_cloud_api::types::sdk::{AccessTokenAuth, ApiError};
+use deepset_cloud_api::types::sdk::AccessTokenAuth;
 use deepset_cloud_api::types::PipelineIn;
 use deepset_cloud_api::{DeepsetCloudApi, DeepsetCloudSettings};
 
@@ -145,35 +145,20 @@ impl Cli {
 
         for payload in pipelines.iter() {
             let workspace_name = &settings.workspace_name;
-
             match api.create_pipeline(workspace_name, payload).await {
                 Ok(_) => {
                     info!("Created pipeline {} successfully", payload.name());
                 }
-                Err(error) => {
-                    if update && error.as_error_code() == 409 {
-                        // Already exists so update instead
-                        match api.update_pipeline_yaml(workspace_name, payload).await {
-                            Ok(_) => {
-                                info!("Updated pipeline {} successfully", payload.name())
-                            }
-                            Err(err) => {
-                                error!(
-                                    { status_code = err.as_error_code() },
-                                    "Failed to update pipeline {}",
-                                    payload.name()
-                                );
-                                process::exit(1);
-                            }
-                        }
-                    } else {
-                        error!(
-                            { status_code = error.as_error_code() },
-                            "Failed to create pipeline {}",
-                            payload.name()
-                        );
+                Err(err) => {
+                    if !(update && err.as_error_code() == 409) {
+                        error!("Failed to create pipeline {}: {}", payload.name(), err);
                         process::exit(1);
                     }
+
+                    api.update_pipeline_yaml(workspace_name, payload)
+                        .await
+                        .expect(&format!("Failed to update pipeline {}", payload.name()));
+                    info!("Updated pipeline {} successfully", payload.name());
                 }
             }
         }
@@ -190,21 +175,11 @@ impl Cli {
         let pipelines = self.load_pipelines(path);
 
         for payload in pipelines.iter() {
-            let workspace_name = &settings.workspace_name;
+            api.update_pipeline_yaml(&settings.workspace_name, payload)
+                .await
+                .expect(&format!("Failed to update pipeline {}", payload.name()));
 
-            match api.update_pipeline_yaml(workspace_name, payload).await {
-                Ok(_) => {
-                    info!("Updated pipeline {} successfully", payload.name());
-                }
-                Err(error) => {
-                    error!(
-                        { status_code = error.as_error_code() },
-                        "Failed to update pipeline {}",
-                        payload.name()
-                    );
-                    process::exit(1);
-                }
-            }
+            info!("Updated pipeline {} successfully", payload.name());
         }
     }
 
@@ -219,22 +194,11 @@ impl Cli {
         let pipelines = self.load_pipelines(path);
 
         for payload in pipelines.iter() {
-            match api
-                .validate_pipeline(&settings.workspace_name, payload)
+            api.validate_pipeline(&settings.workspace_name, payload)
                 .await
-            {
-                Ok(_) => {
-                    info!("Validation of pipeline {} was successful", payload.name());
-                }
-                Err(error) => {
-                    error!(
-                        { status_code = error.as_error_code() },
-                        "Validation failed for pipeline {}",
-                        payload.name()
-                    );
-                    process::exit(1);
-                }
-            }
+                .expect(&format!("Validation failed at pipeline {}", payload.name()));
+
+            info!("Validation for pipeline {} was successful", payload.name());
         }
     }
 
