@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::process;
 use tracing::{error, info, warn};
 
-use deepset_cloud_api::types::sdk::AccessTokenAuth;
+use deepset_cloud_api::types::sdk::{AccessTokenAuth, ApiError};
 use deepset_cloud_api::types::PipelineIn;
 use deepset_cloud_api::{DeepsetCloudApi, DeepsetCloudSettings};
 
@@ -53,10 +53,9 @@ impl Cli {
     }
 
     #[allow(dead_code)]
-    fn deepset_cloud_api(&self) -> DeepsetCloudApi {
-        let settings = self.settings();
+    fn deepset_cloud_api(&self, settings: &DeepsetCloudSettings) -> DeepsetCloudApi {
         DeepsetCloudApi::builder()
-            .with_authenticator(AccessTokenAuth::new(settings.api_key))
+            .with_authenticator(AccessTokenAuth::new(&settings.api_key))
             .build()
     }
 
@@ -134,22 +133,112 @@ impl Cli {
         return pipelines;
     }
 
-    pub fn create_pipelines(&self, _update: bool) {
+    pub async fn create_pipelines(&self, update: bool) {
         info!("Creating pipelines...");
+
         let path = self.path();
+        let settings = self.settings();
+
+        let api = self.deepset_cloud_api(&settings);
+
         let pipelines = self.load_pipelines(path);
-        dbg!(pipelines);
+
+        for payload in pipelines.iter() {
+            let workspace_name = &settings.workspace_name;
+
+            match api.create_pipeline(workspace_name, payload).await {
+                Ok(_) => {
+                    info!("Created pipeline {} successfully", payload.name());
+                }
+                Err(error) => {
+                    if update && error.as_error_code() == 409 {
+                        // Already exists so update instead
+                        match api.update_pipeline_yaml(workspace_name, payload).await {
+                            Ok(_) => {
+                                info!("Updated pipeline {} successfully", payload.name())
+                            }
+                            Err(err) => {
+                                error!(
+                                    { status_code = err.as_error_code() },
+                                    "Failed to update pipeline {}",
+                                    payload.name()
+                                );
+                                process::exit(1);
+                            }
+                        }
+                    } else {
+                        error!(
+                            { status_code = error.as_error_code() },
+                            "Failed to create pipeline {}",
+                            payload.name()
+                        );
+                        process::exit(1);
+                    }
+                }
+            }
+        }
     }
 
-    pub fn update_pipelines(&self) {
+    pub async fn update_pipelines(&self) {
         info!("Updating pipelines...");
+
+        let path = self.path();
+        let settings = self.settings();
+
+        let api = self.deepset_cloud_api(&settings);
+
+        let pipelines = self.load_pipelines(path);
+
+        for payload in pipelines.iter() {
+            let workspace_name = &settings.workspace_name;
+
+            match api.update_pipeline_yaml(workspace_name, payload).await {
+                Ok(_) => {
+                    info!("Updated pipeline {} successfully", payload.name());
+                }
+                Err(error) => {
+                    error!(
+                        { status_code = error.as_error_code() },
+                        "Failed to update pipeline {}",
+                        payload.name()
+                    );
+                    process::exit(1);
+                }
+            }
+        }
     }
 
-    pub fn validate_pipelines(&self) {
+    pub async fn validate_pipelines(&self) {
         info!("Validating pipelines...");
+
+        let path = self.path();
+        let settings = self.settings();
+
+        let api = self.deepset_cloud_api(&settings);
+
+        let pipelines = self.load_pipelines(path);
+
+        for payload in pipelines.iter() {
+            match api
+                .validate_pipeline(&settings.workspace_name, payload)
+                .await
+            {
+                Ok(_) => {
+                    info!("Validation of pipeline {} was successful", payload.name());
+                }
+                Err(error) => {
+                    error!(
+                        { status_code = error.as_error_code() },
+                        "Validation failed for pipeline {}",
+                        payload.name()
+                    );
+                    process::exit(1);
+                }
+            }
+        }
     }
 
-    pub fn deploy_pipelines(&self) {
+    pub async fn deploy_pipelines(&self) {
         info!("Deploying pipelines...");
     }
 }

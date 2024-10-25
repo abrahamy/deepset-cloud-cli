@@ -32,19 +32,19 @@ async fn main() {
 
     match pipeline_commands {
         Some(&PipelineCommands::Create { update }) => {
-            cli.create_pipelines(update);
+            cli.create_pipelines(update).await;
         }
 
         Some(&PipelineCommands::Update) => {
-            cli.update_pipelines();
+            cli.update_pipelines().await;
         }
 
         Some(&PipelineCommands::Validate) => {
-            cli.validate_pipelines();
+            cli.validate_pipelines().await;
         }
 
         Some(&PipelineCommands::Deploy) => {
-            cli.deploy_pipelines();
+            cli.deploy_pipelines().await;
         }
 
         None => {
