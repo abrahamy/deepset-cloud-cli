@@ -1,8 +1,10 @@
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
-use tracing::info;
+use std::path::{self, Path, PathBuf};
+use std::process;
+use tracing::{info, warn};
 
 use deepset_cloud_api::types::sdk::AccessTokenAuth;
+use deepset_cloud_api::types::PipelineIn;
 use deepset_cloud_api::{DeepsetCloudApi, DeepsetCloudSettings};
 
 #[derive(Parser)]
@@ -45,7 +47,6 @@ pub enum PipelineCommands {
 }
 
 impl Cli {
-    #[allow(dead_code)]
     fn settings(&self) -> DeepsetCloudSettings {
         DeepsetCloudSettings::init()
             .expect("Could not determine settings from environment variables!")
@@ -59,15 +60,85 @@ impl Cli {
             .build()
     }
 
-    #[allow(dead_code)]
     fn path(&self) -> PathBuf {
         self.pipeline_dir
             .clone()
             .unwrap_or(PathBuf::from("./pipelines"))
     }
 
+    fn into_pipeline(&self, path: &Path) -> Option<PipelineIn> {
+        let query_yaml = path.join("query.yaml");
+        let indexing_yaml = path.join("indexing.yaml");
+
+        if !(query_yaml.is_file() && indexing_yaml.is_file()) {
+            warn!(
+                "Both indexing.yaml and query.yaml must exist in {}",
+                path.display()
+            );
+            return None;
+        }
+
+        let pipeline_name = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or_default();
+
+        let indexing_yaml_content = std::fs::read_to_string(&indexing_yaml)
+            .map_err(|e| warn!("Failed to read indexing.yaml: {}", e))
+            .ok()?;
+
+        let query_yaml_content = std::fs::read_to_string(&query_yaml)
+            .map_err(|e| warn!("Failed to read query.yaml: {}", e))
+            .ok()?;
+
+        Some(
+            PipelineIn::builder()
+                .name(pipeline_name)
+                .indexing_yaml(&indexing_yaml_content)
+                .query_yaml(&query_yaml_content)
+                .build(),
+        )
+    }
+
+    fn load_pipelines(&self, path: PathBuf) -> Vec<PipelineIn> {
+        let mut pipeline_dirs = Vec::new();
+
+        match std::fs::read_dir(&path) {
+            Ok(entries) => {
+                for entry in entries {
+                    if let Ok(entry) = entry {
+                        if entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false) {
+                            pipeline_dirs.push(entry.path());
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                warn!("Failed to read directory {}: {}", path.display(), e);
+                process::exit(1);
+            }
+        }
+
+        let mut pipelines = Vec::new();
+        for dir in pipeline_dirs {
+            match self.into_pipeline(dir.as_path()) {
+                Some(pipeline) => pipelines.push(pipeline),
+                None => {
+                    warn!(
+                        "Failed to create pipeline from directory: {}",
+                        dir.display()
+                    );
+                    process::exit(1);
+                }
+            }
+        }
+        return pipelines;
+    }
+
     pub fn create_pipelines(&self, _update: bool) {
-        info!("Creating pipelines with...");
+        info!("Creating pipelines...");
+        let path = self.path();
+        let pipelines: _ = self.load_pipelines(path);
     }
 
     pub fn update_pipelines(&self) {
