@@ -30,6 +30,7 @@ impl Default for ServiceLevel {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum DeepsetCloudVersion {
     V1,
     V2,

@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
-use std::path::{self, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use std::process;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 use deepset_cloud_api::types::sdk::AccessTokenAuth;
 use deepset_cloud_api::types::PipelineIn;
@@ -32,7 +32,7 @@ pub enum PipelineCommands {
     /// Create new pipelines from the artifacts stored in `pipeline_dir`
     Create {
         /// When set to `true` will update the pipeline if it already exist
-        #[arg[short, long]]
+        #[arg[short, long, action]]
         update: bool,
     },
 
@@ -64,6 +64,8 @@ impl Cli {
         self.pipeline_dir
             .clone()
             .unwrap_or(PathBuf::from("./pipelines"))
+            .canonicalize()
+            .unwrap()
     }
 
     fn into_pipeline(&self, path: &Path) -> Option<PipelineIn> {
@@ -114,7 +116,7 @@ impl Cli {
                 }
             }
             Err(e) => {
-                warn!("Failed to read directory {}: {}", path.display(), e);
+                error!("Failed to read directory {}: {}", path.display(), e);
                 process::exit(1);
             }
         }
@@ -124,10 +126,7 @@ impl Cli {
             match self.into_pipeline(dir.as_path()) {
                 Some(pipeline) => pipelines.push(pipeline),
                 None => {
-                    warn!(
-                        "Failed to create pipeline from directory: {}",
-                        dir.display()
-                    );
+                    error!("Failed to load pipeline in directory: {}", dir.display());
                     process::exit(1);
                 }
             }
@@ -138,7 +137,8 @@ impl Cli {
     pub fn create_pipelines(&self, _update: bool) {
         info!("Creating pipelines...");
         let path = self.path();
-        let pipelines: _ = self.load_pipelines(path);
+        let pipelines = self.load_pipelines(path);
+        dbg!(pipelines);
     }
 
     pub fn update_pipelines(&self) {
