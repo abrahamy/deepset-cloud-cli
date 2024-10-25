@@ -5,7 +5,13 @@ use tracing::{error, info, warn};
 
 use deepset_cloud_api::types::sdk::AccessTokenAuth;
 use deepset_cloud_api::types::PipelineIn;
-use deepset_cloud_api::{DeepsetCloudApi, DeepsetCloudSettings};
+use deepset_cloud_api::DeepsetCloudSettings;
+
+#[cfg(not(debug_assertions))]
+use deepset_cloud_api::DeepsetCloudApi;
+
+#[cfg(debug_assertions)]
+use deepset_cloud_api::DeepsetCloudDevApi;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -52,9 +58,16 @@ impl Cli {
             .expect("Could not determine settings from environment variables!")
     }
 
-    #[allow(dead_code)]
+    #[cfg(not(debug_assertions))]
     fn deepset_cloud_api(&self, settings: &DeepsetCloudSettings) -> DeepsetCloudApi {
         DeepsetCloudApi::builder()
+            .with_authenticator(AccessTokenAuth::new(&settings.api_key))
+            .build()
+    }
+
+    #[cfg(debug_assertions)]
+    fn deepset_cloud_api(&self, settings: &DeepsetCloudSettings) -> DeepsetCloudDevApi {
+        DeepsetCloudDevApi::builder()
             .with_authenticator(AccessTokenAuth::new(&settings.api_key))
             .build()
     }
