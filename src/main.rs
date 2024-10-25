@@ -10,7 +10,7 @@ fn configure_logging() {
     tracing::subscriber::set_global_default(
         FmtSubscriber::builder()
             .with_max_level(Level::INFO)
-            .json()
+            // .json()
             .finish(),
     )
     .expect("Setting default subscriber failed");
