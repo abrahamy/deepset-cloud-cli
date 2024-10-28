@@ -1,7 +1,8 @@
+use apisdk::serde_json::json;
 use apisdk::{send, send_json, ApiResult};
 use tracing::instrument;
 
-use crate::types::{Pipeline, PipelineIn, PipelineOut};
+use crate::types::{DeepsetCloudVersion, Pipeline, PipelineIn, PipelineOut};
 use crate::DeepsetCloudApi;
 
 #[cfg(feature = "dev-api")]
@@ -48,10 +49,10 @@ impl DeepsetCloudApi {
     }
 
     #[instrument]
-    pub async fn validate_pipeline(
+    pub async fn validate_pipelines(
         &self,
         workspace_name: &str,
-        payload: &PipelineIn,
+        version: &DeepsetCloudVersion,
     ) -> ApiResult<()> {
         let req = self
             .post(format!(
@@ -59,6 +60,11 @@ impl DeepsetCloudApi {
                 workspace_name
             ))
             .await?;
+
+        let payload = json!({
+            "deepset_cloud_version": version
+        });
+
         send_json!(req, payload, ()).await
     }
 }
@@ -105,10 +111,10 @@ impl DeepsetCloudDevApi {
     }
 
     #[instrument]
-    pub async fn validate_pipeline(
+    pub async fn validate_pipelines(
         &self,
         workspace_name: &str,
-        payload: &PipelineIn,
+        version: &DeepsetCloudVersion,
     ) -> ApiResult<()> {
         let req = self
             .post(format!(
@@ -116,6 +122,11 @@ impl DeepsetCloudDevApi {
                 workspace_name
             ))
             .await?;
+
+        let payload = json!({
+            "deepset_cloud_version": version
+        });
+
         send_json!(req, payload, ()).await
     }
 }

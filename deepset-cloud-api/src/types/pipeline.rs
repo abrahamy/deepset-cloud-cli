@@ -1,16 +1,17 @@
 use chrono::{DateTime, Utc};
+use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::{DeepsetCloudVersion, ServiceLevel, User};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Getters)]
 pub struct PipelineIndexingStatus {
     pending_file_count: u64,
     failed_file_count: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Getters)]
 pub struct Pipeline {
     name: String,
     pipeline_id: Uuid,
@@ -31,7 +32,7 @@ pub struct Pipeline {
     indexing: PipelineIndexingStatus,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize, Getters)]
 pub struct PipelineIn {
     name: String,
     config: Option<String>,
@@ -45,26 +46,6 @@ impl PipelineIn {
         PipelineInBuilder {
             item: PipelineIn::default(),
         }
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn config(&self) -> Option<&str> {
-        self.config.as_deref()
-    }
-
-    pub fn indexing_yaml(&self) -> Option<&str> {
-        self.indexing_yaml.as_deref()
-    }
-
-    pub fn query_yaml(&self) -> Option<&str> {
-        self.query_yaml.as_deref()
-    }
-
-    pub fn deepset_cloud_version(&self) -> &DeepsetCloudVersion {
-        &self.deepset_cloud_version
     }
 }
 
@@ -103,7 +84,7 @@ impl PipelineInBuilder {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Getters)]
 pub struct PipelineOut {
     name: String,
 }

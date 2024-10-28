@@ -4,7 +4,7 @@ use std::process;
 use tracing::{error, info, warn};
 
 use deepset_cloud_api::types::sdk::AccessTokenAuth;
-use deepset_cloud_api::types::PipelineIn;
+use deepset_cloud_api::types::{DeepsetCloudVersion, PipelineIn};
 use deepset_cloud_api::DeepsetCloudSettings;
 
 #[cfg(not(debug_assertions))]
@@ -200,19 +200,22 @@ impl Cli {
         info!("Validating pipelines...");
 
         let path = self.path();
+
         let settings = self.settings();
 
         let api = self.deepset_cloud_api(&settings);
 
-        let pipelines = self.load_pipelines(path);
+        api.validate_pipelines(&settings.workspace_name, &DeepsetCloudVersion::V2)
+            .await
+            .expect(&format!(
+                "Validation failed for pipelines in {}",
+                path.display()
+            ));
 
-        for payload in pipelines.iter() {
-            api.validate_pipeline(&settings.workspace_name, payload)
-                .await
-                .expect(&format!("Validation failed at pipeline {}", payload.name()));
-
-            info!("Validation for pipeline {} was successful", payload.name());
-        }
+        info!(
+            "Validation for pipelines in {} was successful",
+            path.display()
+        );
     }
 
     pub async fn deploy_pipelines(&self) {

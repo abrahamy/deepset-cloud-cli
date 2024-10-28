@@ -1,3 +1,4 @@
+use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -9,40 +10,30 @@ pub mod sdk {
     pub use apisdk::*;
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Getters)]
 pub struct User {
     user_id: Uuid,
     given_name: String,
     family_name: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub enum ServiceLevel {
     DRAFT,
+    #[default]
     DEVELOPMENT,
     PRODUCTION,
 }
 
-impl Default for ServiceLevel {
-    fn default() -> Self {
-        ServiceLevel::DEVELOPMENT
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum DeepsetCloudVersion {
     V1,
+    #[default]
     V2,
 }
 
-impl Default for DeepsetCloudVersion {
-    fn default() -> Self {
-        DeepsetCloudVersion::V2
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Getters)]
 pub struct Workspace {
     name: String,
     workspace_id: Uuid,
