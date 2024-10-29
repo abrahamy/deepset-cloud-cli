@@ -7,7 +7,7 @@ edition = "2021"
 members = ["deepset-cloud-api"]
 
 [dependencies]
-deepset-cloud-api = { path = "deepset-cloud-api", features = ["dev-api"] }
+deepset-cloud-api = { path = "deepset-cloud-api" }
 clap = { version = "4.5.20", features = ["derive"] }
 tokio = { version = "1.40.0", features = ["full"] }
 tracing = "0.1.40"

@@ -16,6 +16,3 @@ uuid = { version = "1.11.0", features = [
     "macro-diagnostics",
     "serde",
 ] }
-
-[features]
-dev-api = []

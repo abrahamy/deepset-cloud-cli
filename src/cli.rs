@@ -5,13 +5,8 @@ use tracing::{error, info, warn};
 
 use deepset_cloud_api::types::sdk::AccessTokenAuth;
 use deepset_cloud_api::types::{DeepsetCloudVersion, PipelineIn};
-use deepset_cloud_api::DeepsetCloudSettings;
-
-#[cfg(not(debug_assertions))]
 use deepset_cloud_api::DeepsetCloudApi;
-
-#[cfg(debug_assertions)]
-use deepset_cloud_api::DeepsetCloudDevApi;
+use deepset_cloud_api::DeepsetCloudSettings;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -61,15 +56,25 @@ impl Cli {
     #[cfg(not(debug_assertions))]
     fn deepset_cloud_api(&self, settings: &DeepsetCloudSettings) -> DeepsetCloudApi {
         DeepsetCloudApi::builder()
+            .with_log("WARN")
             .with_authenticator(AccessTokenAuth::new(&settings.api_key))
-            .build()
+            .build();
     }
 
     #[cfg(debug_assertions)]
-    fn deepset_cloud_api(&self, settings: &DeepsetCloudSettings) -> DeepsetCloudDevApi {
-        DeepsetCloudDevApi::builder()
+    fn deepset_cloud_api(&self, settings: &DeepsetCloudSettings) -> DeepsetCloudApi {
+        let api = DeepsetCloudApi::builder()
+            .with_log("WARN")
             .with_authenticator(AccessTokenAuth::new(&settings.api_key))
-            .build()
+            .build();
+
+        DeepsetCloudApi {
+            core: api
+                .core
+                .rebase(&settings.base_url)
+                .expect("Failed to update the base_url")
+                .into(),
+        }
     }
 
     fn path(&self) -> PathBuf {
