@@ -168,15 +168,15 @@ impl Cli {
                     info!("Created pipeline {} successfully", payload.name());
                 }
                 Err(err) => {
-                    if !(update && err.as_error_code() == 409) {
+                    if update && err.as_error_code() == 409 {
+                        api.update_pipeline_yaml(workspace_name, payload)
+                            .await
+                            .expect(&format!("Failed to update pipeline {}", payload.name()));
+                        info!("Updated pipeline {} successfully", payload.name());
+                    } else {
                         error!("Failed to create pipeline {}: {}", payload.name(), err);
                         process::exit(1);
                     }
-
-                    api.update_pipeline_yaml(workspace_name, payload)
-                        .await
-                        .expect(&format!("Failed to update pipeline {}", payload.name()));
-                    info!("Updated pipeline {} successfully", payload.name());
                 }
             }
         }
